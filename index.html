@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>hw-17</title>
+</head>
+<body>
+    <script>
+        class List {
+            _list = [];
+            _storageName;
+
+            get storageName(){
+                return this._storageName;
+            }
+            get list(){
+                return this._list;
+            }
+            constructor(storageName) {
+                this._storageName = storageName;
+                this.firstLoad();
+            }
+            add(value) {
+                if (value) {
+                    const id = Date.now();
+                    this.list.push({
+                        text: value,
+                        id,
+                    });
+                };
+                this.sendToStorage();
+            }
+            remove(id) {
+                const index = this.getIndex(id);
+                if (index != -1) {
+                    this.list.splice(index, 1);
+                };
+                this.sendToStorage();
+            }
+            edit(id, value) {
+                const index = this.getIndex(id);
+                if (typeof value === 'string') {
+                    value = value.trim();
+                }
+                if (index != -1 && value) {
+                    this.list[index].text = value;
+                };
+                this.sendToStorage();
+            }
+            getIndex(value) {
+                return this.list.findIndex(function (obj) {
+                    if (obj.id == value) return obj;
+                });
+            }
+            sendToStorage() {
+                const storage = localStorage.getItem(this.storageName);
+                const storageString = JSON.stringify(this.list);
+
+                if (storage) {
+                    if (storage === storageString) {
+                        return;
+                    }
+                    localStorage.removeItem(this.storageName);
+                }
+                localStorage.setItem(this.storageName, storageString);
+            }
+            firstLoad() {
+                const storage = JSON.parse(localStorage.getItem(this.storageName));
+
+                if (!this.list.length && storage && storage.length) {
+                    storage.forEach(element => {
+                        this.list.push(element);
+                    });
+                }
+            }
+        };
+        class TodoList extends List{
+            add(value) {
+                const id = Date.now();
+                if (typeof value === 'string') {
+                    value = value.trim();
+                };
+                super.add(value);
+                this.list[this.list.length - 1].isComplete = false;
+                this.sendToStorage();
+            }
+            setComplete(id) {
+                const index = this.getIndex(id);
+                if (index != -1) {
+                    this.list[index].isComplete = true;
+                };
+                this.sendToStorage();
+            }
+            getStatus() {
+                return {
+                    all: this.list.length,
+                    completed: this.list.filter(elem => elem.isComplete ? true : false).length,
+                }
+            }
+        }
+        class ContactList extends List {
+            findMatches(value){
+                if (value && typeof value === 'string' && this.list.length) {
+                    const result = this.list.filter(element => element.text.includes(value));
+                    return result.length ? result : 'Нет такого';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
