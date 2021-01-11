@@ -21,49 +21,73 @@
                 this._storageName = storageName;
                 this.firstLoad();
             }
-            add(value) {
+            add(value, ...args) {
                 if (value) {
-                    const id = Date.now();
-                    this.list.push({
-                        text: value,
-                        id,
-                    });
+                    this.addTemplate(value);
+                    if (args.length) {
+                        args.forEach(element => this.addTemplate(element));
+                    };
                 };
                 this.sendToStorage();
             }
-            remove(id) {
-                const index = this.getIndex(id);
+            remove(element) {
+                const index = this.getIndex(element);
                 if (index != -1) {
                     this.list.splice(index, 1);
                 };
                 this.sendToStorage();
             }
-            edit(id, value) {
-                const index = this.getIndex(id);
-                if (typeof value === 'string') {
-                    value = value.trim();
-                }
-                if (index != -1 && value) {
-                    this.list[index].text = value;
+            edit(element, newValue) {
+                const index = this.getIndex(element);
+                if (index != -1) {
+                    this.list[index].value = newValue.trim();
                 };
                 this.sendToStorage();
             }
-            getIndex(value) {
-                return this.list.findIndex(function (obj) {
-                    if (obj.id == value) return obj;
+            addTemplate (value) {
+                const id = Date.now();
+                if (this.isString(value)) {
+                    value = value.trim();
+                };
+                this.list.push({
+                    value: value,
+                    id,
                 });
             }
-            sendToStorage() {
+            isNumber(element) {
+                return (element && typeof element === 'number') ? true : false;
+            }
+            isString(element) {
+                return (element && typeof element === 'string') ? true : false;
+            }
+            getIndex(value) {
+                if (this.list.length) {
+                    let property;
+                    if (this.isNumber(value)) {
+                        property = 'id';
+                    } else if (this.isString(value)) {
+                        property = 'value';
+                    };
+                    return this.list.findIndex(obj => {if(obj[property] === value) return obj});
+                };
+            }
+            checkStorage() {
                 const storage = localStorage.getItem(this.storageName);
                 const storageString = JSON.stringify(this.list);
 
                 if (storage) {
                     if (storage === storageString) {
                         return;
-                    }
+                    };
+                };
+                return storageString;
+            }
+            sendToStorage() {
+                const storageString = this.checkStorage();
+                if (storageString) {
                     localStorage.removeItem(this.storageName);
+                    localStorage.setItem(this.storageName, storageString);
                 }
-                localStorage.setItem(this.storageName, storageString);
             }
             firstLoad() {
                 const storage = JSON.parse(localStorage.getItem(this.storageName));
@@ -76,13 +100,11 @@
             }
         };
         class TodoList extends List{
-            add(value) {
-                const id = Date.now();
-                if (typeof value === 'string') {
-                    value = value.trim();
-                };
-                super.add(value);
-                this.list[this.list.length - 1].isComplete = false;
+            add(value, ...todoArgs) {
+                super.add(value, ...todoArgs);
+                if (this.list.length) {
+                    this.list.forEach(element => element.isComplete = false);
+                }
                 this.sendToStorage();
             }
             setComplete(id) {
@@ -101,8 +123,8 @@
         }
         class ContactList extends List {
             findMatches(value){
-                if (value && typeof value === 'string' && this.list.length) {
-                    const result = this.list.filter(element => element.text.includes(value));
+                if (this.isString(value) && this.list.length) {
+                    const result = this.list.filter(element => element.value.includes(value));
                     return result.length ? result : 'Нет такого';
                 }
             }
