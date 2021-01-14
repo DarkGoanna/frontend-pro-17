@@ -21,14 +21,19 @@
                 this._storageName = storageName;
                 this.firstLoad();
             }
-            add(value, ...args) {
-                if (value) {
-                    this.addTemplate(value);
-                    if (args.length) {
-                        args.forEach(element => this.addTemplate(element));
+            add(...args) {
+                if (args.length) {
+                    let value = args.join(' ');
+                    const id = Date.now();
+                    if (this.isString(value)) {
+                        value = value.trim();
                     };
-                };
-                this.sendToStorage();
+                    this.list.push({
+                        value: value,
+                        id,
+                    });
+                    this.sendToStorage();
+                }
             }
             remove(element) {
                 const index = this.getIndex(element);
@@ -43,16 +48,6 @@
                     this.list[index].value = newValue.trim();
                 };
                 this.sendToStorage();
-            }
-            addTemplate (value) {
-                const id = Date.now();
-                if (this.isString(value)) {
-                    value = value.trim();
-                };
-                this.list.push({
-                    value: value,
-                    id,
-                });
             }
             isNumber(element) {
                 return (element && typeof element === 'number') ? true : false;
@@ -100,12 +95,12 @@
             }
         };
         class TodoList extends List{
-            add(value, ...todoArgs) {
-                super.add(value, ...todoArgs);
+            add(...args) {
+                super.add(...args);
                 if (this.list.length) {
-                    this.list.forEach(element => element.isComplete = false);
+                    this.list[this.list.length - 1].isComplete = false;
+                    this.sendToStorage();   
                 }
-                this.sendToStorage();
             }
             setComplete(id) {
                 const index = this.getIndex(id);
