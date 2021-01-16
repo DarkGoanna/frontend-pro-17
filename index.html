@@ -21,50 +21,34 @@
                 this._storageName = storageName;
                 this.firstLoad();
             }
-            add(...args) {
-                if (args.length) {
-                    let value = args.join(' ');
-                    const id = Date.now();
-                    if (this.isString(value)) {
-                        value = value.trim();
-                    };
-                    this.list.push({
-                        value: value,
-                        id,
-                    });
-                    this.sendToStorage();
-                }
+            add(newObj) {
+                newObj.id = Date.now();
+                this.list.push(newObj);
             }
-            remove(element) {
-                const index = this.getIndex(element);
+            remove(id) {
+                const index = this.getIndex(id);
                 if (index != -1) {
                     this.list.splice(index, 1);
-                };
+                }
                 this.sendToStorage();
             }
-            edit(element, newValue) {
-                const index = this.getIndex(element);
+            edit(id, property, value) {
+                const index = this.getIndex(id);
                 if (index != -1) {
-                    this.list[index].value = newValue.trim();
-                };
+                    if (this.isString(value)) {
+                        value.trim();
+                    }
+                    this.list[index][property] = value;
+                }
                 this.sendToStorage();
-            }
-            isNumber(element) {
-                return (element && typeof element === 'number') ? true : false;
             }
             isString(element) {
                 return (element && typeof element === 'string') ? true : false;
             }
-            getIndex(value) {
+            getIndex(id) {
                 if (this.list.length) {
-                    let property;
-                    if (this.isNumber(value)) {
-                        property = 'id';
-                    } else if (this.isString(value)) {
-                        property = 'value';
-                    };
-                    return this.list.findIndex(obj => {if(obj[property] === value) return obj});
-                };
+                    return this.list.findIndex(obj => (obj.id === id) ? obj : undefined);
+                }
             }
             checkStorage() {
                 const storage = localStorage.getItem(this.storageName);
@@ -73,8 +57,8 @@
                 if (storage) {
                     if (storage === storageString) {
                         return;
-                    };
-                };
+                    }
+                }
                 return storageString;
             }
             sendToStorage() {
@@ -95,18 +79,20 @@
             }
         };
         class TodoList extends List{
-            add(...args) {
-                super.add(...args);
-                if (this.list.length) {
-                    this.list[this.list.length - 1].isComplete = false;
-                    this.sendToStorage();   
+            add(value) {
+                if (this.isString(value)) {
+                    super.add({
+                        task: value,
+                        isComplete: false,
+                    });
+                    this.sendToStorage();
                 }
             }
             setComplete(id) {
                 const index = this.getIndex(id);
                 if (index != -1) {
                     this.list[index].isComplete = true;
-                };
+                }
                 this.sendToStorage();
             }
             getStatus() {
@@ -117,9 +103,16 @@
             }
         }
         class ContactList extends List {
-            findMatches(value){
-                if (this.isString(value) && this.list.length) {
-                    const result = this.list.filter(element => element.value.includes(value));
+            add(name, surname = null) {
+                const newContact = {};
+                if (this.isString(name)) newContact.name = name.trim();
+                if (this.isString(surname)) newContact.surname = surname.trim();
+                super.add(newContact);
+                this.sendToStorage();
+            }
+            findMatches(property, value){
+                if (this.isString(property) && this.list.length) {
+                    const result = this.list.filter(obj => obj[property] === value);
                     return result.length ? result : 'Нет такого';
                 }
             }
